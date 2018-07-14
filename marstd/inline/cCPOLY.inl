@@ -293,7 +293,7 @@ inline void CCompactMesh::finalize() {
 
 		// Check for unused vertices.
 
-		ASSERT(count);
+		//ASSERT(count);
 
 		vertex[i].normal /= count;
 

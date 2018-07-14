@@ -1,4 +1,5 @@
 #include "marstd.h"
+#include <algorithm>
 
 #define EPS	0
 
@@ -74,7 +75,7 @@ static bool point_collision(CSphere sphere, CVector delta, CVector point, CVecto
         	// Don't know if this is so usefull though.
         	CVector tmp = sphere.position - point;
         	if (tmp.size2() <= sphere.radius*sphere.radius) {
-        		allegro_message("Warning: point_collision: A == 0 && delta <= radius");
+        		//allegro_message("Warning: point_collision: A == 0 && delta <= radius");
         		t = 0;
         		impact = point;
         		return true;
@@ -89,7 +90,7 @@ static bool point_collision(CSphere sphere, CVector delta, CVector point, CVecto
 	const float time1 = (-B - root) / (2 * A); 		
 	const float time2 = (-B + root) / (2 * A);
 	
-	t = MIN(time1, time2);
+	t = std::min(time1, time2);
 	
 	if (t >= 0 && t <= 1) {
 		impact = point;		
@@ -157,7 +158,7 @@ static bool circle_collision(CSphere circle, CVector delta, CVector edge_v1, CVe
   			t = - point_distance1 / (point_distance2 - point_distance1);
   			
 		if (t < 0 || t > 1) {
-			allegro_message("Warning: circle_collision: t < 0 || t > 1");
+			//allegro_message("Warning: circle_collision: t < 0 || t > 1");
   			t = 0;
 		}  			
   		

@@ -18,9 +18,9 @@
 // FIXME: Use degress instead of radians? (OpenGL like).
 // FIXME: Use true 4x4 matrix, not allegro hack. Same ordering as OpenGL.
 
-#include <allegro.h>
 #include "cMATH.h"
 #include "cVECTOR.h"
+#include "Mat4x4.h"
 
 //---------------------------------------------------------------------------
 
@@ -140,10 +140,10 @@ class CMatrix {
 	
  public:
  
-	MATRIX_f m[MATRIX_STACK_SIZE];  	///< Matrix stack.
+	Mat4x4 m[MATRIX_STACK_SIZE];  	///< Matrix stack.
 	float v[MATRIX_STACK_SIZE][4][4];		///< 4x4 Matrix.
 	int depth;				///< Matrix stack depth.
-	MATRIX_f tmp;				///< Temp matrix used by mul()
+	Mat4x4 tmp;				///< Temp matrix used by mul()
 	
  public:
  
@@ -171,7 +171,9 @@ class CMatrix {
 	 * @see tmp
 	 */
 	void mul() {
-		matrix_mul_f(&tmp, &m[depth], &m[depth]);
+		m[depth] = m[depth] * tmp;
+	// todo : check order is correct
+		//matrix_mul_f(&tmp, &m[depth], &m[depth]);
 	}
 	
  public:
@@ -180,7 +182,7 @@ class CMatrix {
  	 * Loads the current matrix with the identity matrix.
    	 */ 	
 	void identity() {
-		m[depth] = identity_matrix_f;
+		m[depth].MakeIdentity();
 	}
 	/**
 	 * Scales the matrix.
@@ -189,7 +191,7 @@ class CMatrix {
 	 * @param z Factor to scale z axis.  	 
 	 */
 	void scale(float x, float y, float z) {
-		get_scaling_matrix_f(&tmp, x, y, z);
+		tmp.MakeScaling(x, y, z);
 		mul();
 	}
 	/**
@@ -207,7 +209,7 @@ class CMatrix {
 	 * @param z Amount to translate along z axis.  	 
 	 */
 	void translate(float x, float y, float z) {
-		get_translation_matrix_f(&tmp, x, y, z);
+		tmp.MakeTranslation(x, y, z);
 		mul();
 	}
 	/**
@@ -225,7 +227,9 @@ class CMatrix {
 	 * @param z Rotation around the z axis.  	 	 
 	 */	
 	void rotate(float x, float y, float z) {
-		get_rotation_matrix_f(&tmp, RAD2BIN(x), RAD2BIN(y), RAD2BIN(z));
+		tmp = Mat4x4(true).RotateX(x).RotateY(y).RotateZ(z);
+	// todo : check if euler order is correct
+		//get_rotation_matrix_f(&tmp, RAD2BIN(x), RAD2BIN(y), RAD2BIN(z));
 		mul();
 	}
 	/**
@@ -270,7 +274,10 @@ class CMatrix {
 	 * @param zout Variable to store new z value.  	 
 	 */
 	void apply(float x, float y, float z, float& xout, float& yout, float& zout) {
-		apply_matrix_f(&m[depth], x, y, z, &xout, &yout, &zout);
+		const Vec3 r = m[depth].Mul4(Vec3(x, y, z));
+		xout = r[0];
+		yout = r[1];
+		zout = r[2];
 	}
 	/**
 	 * @param v Vector to transform.
@@ -278,7 +285,10 @@ class CMatrix {
 	 * @see apply()
 	 */
 	void apply(CVector& v, CVector& vout) {
-		apply_matrix_f(&m[depth], v[0], v[1], v[2], &vout[0], &vout[1], &vout[2]);
+		const Vec3 r = m[depth].Mul4(Vec3(v[0], v[1], v[2]));
+		vout[0] = r[0];
+		vout[1] = r[1];
+		vout[2] = r[2];
 	}
  
 };

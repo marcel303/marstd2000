@@ -15,6 +15,8 @@
 #include <stdarg.h>
 #include "marx.h"
 
+#if 0
+
 /**
  * Initializes a default system with support for keyboard, timers and mouse. A truecolour (32 or 24 BPP) graphics mode of 640x480 pixels is selected.
  * @return True on succes, false otherwise.
@@ -61,3 +63,5 @@ bool MARX::testenv_shutdown() {
 	return true;
 
 }
+
+#endif

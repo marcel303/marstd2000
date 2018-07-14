@@ -11,35 +11,18 @@
 // CBezier3 patch example.
 //////////////////////////////////////////////////////////////////////
 
-#include <alleggl.h>
-#include <gl/glu.h>
 #include "marstd.h"
+#include "framework.h"
 
 int main(int argc, char* argv[]) {
 
-	allegro_init();
-	
 //--------------------------------------------------------------------
 // Initalize system.
 	
-	if (install_timer() < 0 || install_keyboard() < 0 || install_mouse() < 0) {
-		allegro_message("Error: unable to install system drivers.");
-		return -1;
-	}
+	framework.enableDepthBuffer = true;
 	
-//--------------------------------------------------------------------
-// We will be using hardware accelerated drawing through OpenGL!
-	
-	install_allegro_gl();
-	
-	int bpp = desktop_color_depth();
-	allegro_gl_set(AGL_COLOR_DEPTH, bpp?bpp:32);
-	allegro_gl_set(AGL_DOUBLEBUFFER, 1);
-	allegro_gl_set(AGL_Z_DEPTH, 24);
-	allegro_gl_set(AGL_SUGGEST, AGL_COLOR_DEPTH | AGL_DOUBLEBUFFER | AGL_Z_DEPTH);
-	
-	if (set_gfx_mode(GFX_OPENGL_FULLSCREEN, 800, 600, 0, 0) < 0) {
-		allegro_message("Error: unable to set OpenGL graphics mode.");
+	if (!framework.init(0, nullptr, 800, 600)) {
+		//allegro_message("Error: unable to install system drivers.");
 		return -1;
 	}
 	
@@ -73,8 +56,10 @@ int main(int argc, char* argv[]) {
 //--------------------------------------------------------------------
 // Main loop.
 	
-	while (!key[KEY_ESC]) {
+	while (!keyboard.wentDown(SDLK_ESCAPE)) {
 	
+		framework.process();
+		
    		static float rx = 0.0;		
 	   	static int resolution = 50;	
 	
@@ -83,19 +68,14 @@ int main(int argc, char* argv[]) {
 		
 		// Keyboard input.
 		
-		while (keypressed()) {
-			int c = readkey()>>8;
-			if (c == KEY_A)
-				resolution++;
-			else if (c == KEY_Z)
-   				resolution--;				
-		}
+		if (keyboard.wentDown(SDLK_a))
+			resolution++;
+		else if (keyboard.wentDown(SDLK_z))
+			resolution--;
 		
 		// Mouse input.
 		
-		int mx, my;
-		get_mouse_mickeys(&mx, &my);
-		rx -= my;
+		rx -= mouse.dy;
 		
 //--------------------------------------------------------------------
 // Update / logic.
@@ -132,24 +112,20 @@ int main(int argc, char* argv[]) {
   		
 //--------------------------------------------------------------------  		
 // Rendering.
+
+		framework.beginDraw(0, 0, 0, 0);
   		
 		// Setup matrices.
 
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		
-		gluPerspective(90.0, SCREEN_W/(float)SCREEN_H, 0.01, 100.0);
-		
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
+		projectPerspective3d(90.f, .01f, 100.f);
+		gxScalef(1, 1, -1);
 		
 		// Prepare buffers.
-		
-		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 		
 		glDepthFunc(GL_LESS);
 		glEnable(GL_DEPTH_TEST);		
 		
+	#if 0 // todo
 		// Setup and enable lighting.
 
 		GLfloat l_direction[2][4] =
@@ -169,26 +145,27 @@ int main(int argc, char* argv[]) {
 			glLightfv(GL_LIGHT1+i, GL_DIFFUSE, l_diffuse[i]);
 			glEnable(GL_LIGHT1+i);
 		}
-  			
+		
 		glEnable(GL_LIGHTING);
-  		
-    		glEnable(GL_FOG);
+		
+		glEnable(GL_FOG);
+	#endif
       		
 		// Camera transformation.
 
-		glTranslatef(0.0, 0.0, -2.0);
-		glRotatef(rx, 1.0, 0.0, 0.0);
+		gxTranslatef(0.0, 0.0, -2.0);
+		gxRotatef(rx, 1.0, 0.0, 0.0);
     		
   		// Render triangles.
   		
 		// FIXME: It would be better to output using a triangle strip.
 
-		if (key[KEY_L])
+		if (keyboard.isDown(SDLK_l))
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			
-		glBegin(GL_TRIANGLES); {
+		gxBegin(GL_TRIANGLES); {
           		
   		for (int i=0; i<bezier.resolution-1; i++) {
 
@@ -204,11 +181,11 @@ int main(int argc, char* argv[]) {
 	  			CVector d2 = p3-p2;
 	  			CVector n = d1 % d2;
 	  			n.normalize();
-            	  			
-				glNormal3fv(n);
-				glVertex3fv(p1);
-				glVertex3fv(p2);
-				glVertex3fv(p3);
+				
+				gxNormal3fv(n);
+				gxVertex3fv(p1);
+				gxVertex3fv(p2);
+				gxVertex3fv(p3);
 				
 	  			p1 = bezier.v[i+1][j+1];
 
@@ -223,30 +200,29 @@ int main(int argc, char* argv[]) {
 	  			n = - (d1 % d2);
 	  			n.normalize();
 
-				glNormal3fv(n);
-				glVertex3fv(p1);
-				glVertex3fv(p2);
-				glVertex3fv(p3);
+				gxNormal3fv(n);
+				gxVertex3fv(p1);
+				gxVertex3fv(p2);
+				gxVertex3fv(p3);
 
 			}
 
 		} 
 
-		} glEnd();		
+		} gxEnd();
 
 //--------------------------------------------------------------------
 // Make back buffer visible.
 
-  		allegro_gl_flip();
+  		framework.endDraw();
 
 	}
 
 //--------------------------------------------------------------------
 // Shutdown system.
 
-	remove_allegro_gl();
-	allegro_exit();
+	framework.shutdown();
 	
 	return 0;	
 
-} END_OF_MAIN();
+}

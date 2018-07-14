@@ -1,4 +1,4 @@
-#include <allegro.h>
+#include "marx.h"
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -10,6 +10,7 @@ void MARX::message(char* message, ...) {
 	vsprintf(text, message, ap);
 	va_end(ap);
 	
+#if 0
 	BITMAP* tmp = create_bitmap(SCREEN_W, SCREEN_H);
 	blit(screen, tmp, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
 	
@@ -23,6 +24,7 @@ void MARX::message(char* message, ...) {
 	
 	blit(tmp, screen, 0, 0, 0, 0, SCREEN_W, SCREEN_H);
 	destroy_bitmap(tmp);
+#endif
 	
 	FILE* f = fopen("log.txt", "at");
 	if (f) {

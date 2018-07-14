@@ -1,4 +1,3 @@
-#include <allegro.h>
 #include "cISOSURFACE.h"
 
 static float treshold = 1.0;
