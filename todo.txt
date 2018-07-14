@@ -1,0 +1,4 @@
+* Change CMatrix to CMatrixStack and implement CMatrix3 and CMatrix4.
+* Finally implement CSG operation (ADD, SUB, OR).
+* Move CIsosurface code into header.
+* Octree class that splits nodes with volume > treshold. Bounding box. Uses bounding box's largest dimension to get splitting plane.
