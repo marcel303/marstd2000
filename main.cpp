@@ -117,13 +117,13 @@ int main(int argc, char* argv[]) {
 	// Define materials.
         
 	INIT_MATERIAL(mat_default,			my_load_bitmap("default.bmp"),		MAT_TEXGEN_UV);
-	INIT_MATERIAL(mat_bezier,			my_load_bitmap("bezier.bmp"),		/*MAT_GRGB*/MAT_TEXGEN_UV|MAT_DOUBLESIDED);
+	INIT_MATERIAL(mat_bezier,			my_load_bitmap("bezier.bmp"),		MAT_GRGB|MAT_TEXGEN_UV|MAT_DOUBLESIDED|MAT_TRANSPARENT);
 	INIT_MATERIAL(mat_large_cube,		my_load_bitmap("large_cube.bmp"),	MAT_TEXGEN_UV|MAT_DOUBLESIDED);
-	INIT_MATERIAL(mat_large_cilinder,	my_load_bitmap("zola.bmp"),			MAT_TEXGEN_UV|MAT_DOUBLESIDED);
+	INIT_MATERIAL(mat_large_cilinder,	my_load_bitmap("bezier.bmp"),			MAT_TEXGEN_UV|MAT_DOUBLESIDED);
 	INIT_MATERIAL(mat_cone,				my_load_bitmap("cone.bmp"),			MAT_TEXGEN_SCREEN|MAT_OUTLINE);
 	INIT_MATERIAL(mat_donut, 			my_load_bitmap("donut.bmp"),		MAT_TEXGEN_UV);
 	INIT_MATERIAL(mat_cilinder,			my_load_bitmap("default.bmp"),		MAT_TEXGEN_SKY|MAT_OUTLINE|MAT_TRANSPARENT|MAT_DOUBLESIDED);
-	INIT_MATERIAL(mat_cubes,			my_load_bitmap("cubes.bmp"),		MAT_TEXGEN_UV);
+	INIT_MATERIAL(mat_cubes,			my_load_bitmap("cubes.bmp"),		MAT_OUTLINE|MAT_TEXGEN_UV|MAT_DOUBLESIDED|MAT_TRANSPARENT);
 	INIT_MATERIAL(mat_isosurface,		my_load_bitmap("notexture"),		MAT_TEXGEN_UV|MAT_DOUBLESIDED|MAT_TRANSPARENT);
 
 	// Create geometry.
@@ -621,7 +621,7 @@ static void draw_poly(CPoly* p) {
 				}
 				
 				gxTexCoord2f(u, v);
-				gxColor4ub(r, g, b, 192);
+				gxColor4ub(r, g, b, 140);
 				gxVertex3f(x, y, z);
 				l = l->next;
 			}
@@ -776,7 +776,7 @@ static void create_world(CBsp& bsp) {
 
 	// Add some random cubes.
 
-	for (int i=0; i<10*2; i++) {
+	for (int i=0; i<10*1; i++) {
 		MARX::matrix.push();
 		CVector p;
 		p[0] = ((rand()&4095)/4097.0-0.5)*4.0;
