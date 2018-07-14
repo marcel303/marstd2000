@@ -106,12 +106,6 @@ static GLuint my_load_bitmap(const char* filename);
 
 //////////////////////////////////////////////////////////////////////
 
-static unsigned long blend15(unsigned long c1, unsigned long c2, unsigned long n);
-static unsigned long blend16(unsigned long c1, unsigned long c2, unsigned long n);
-static unsigned long blend24(unsigned long c1, unsigned long c2, unsigned long n);
-
-//////////////////////////////////////////////////////////////////////
-
 int main(int argc, char* argv[]) {
 
 //--------------------------------------------------------------------
@@ -636,7 +630,7 @@ static void draw_poly(CPoly* p) {
 	}
 	gxSetTexture(0);
 	
-	if ((bdata->mat->flags & MAT_OUTLINE) || keyboard.isDown(SDLK_i))
+	if ((data->mat->flags & MAT_OUTLINE) || keyboard.isDown(SDLK_i))
 	{
 		gxColor3ub(63, 63, 63);
 		
@@ -1130,30 +1124,3 @@ static GLuint my_load_bitmap(const char* filename) {
 	
 	return texture;
 }
-
-//--------------------------------------------------------------------
-// Custom blender functions. 3:1 transparency.
-
-#if 0
-
-static unsigned long blend15(unsigned long c1, unsigned long c2, unsigned long n) {
-	const unsigned long r = (getr15(c1)+getr15(c2)*3)>>2;
-	const unsigned long g = (getg15(c1)+getg15(c2)*3)>>2;
-	const unsigned long b = (getb15(c1)+getb15(c2)*3)>>2; 	
-	return makecol15(r, g, b);
-}
-static unsigned long blend16(unsigned long c1, unsigned long c2, unsigned long n) {
-	const unsigned long r = (getr16(c1)+getr16(c2)*3)>>2;
-	const unsigned long g = (getg16(c1)+getg16(c2)*3)>>2;
-	const unsigned long b = (getb16(c1)+getb16(c2)*3)>>2; 	
-	return makecol16(r, g, b);
-}
-static unsigned long blend24(unsigned long c1, unsigned long c2, unsigned long n) {
-	const unsigned long r = (getr24(c1)+getr24(c2)*3)>>2;
-	const unsigned long g = (getg24(c1)+getg24(c2)*3)>>2;
-	const unsigned long b = (getb24(c1)+getb24(c2)*3)>>2; 	
-	return makecol24(r, g, b);
-}
-
-#endif
-
