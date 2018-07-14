@@ -26,9 +26,9 @@ project(marstd2000-examples)
 
 set(libs marstd2000 framework ${FRAMEWORK_LIBRARIES})
 
-#set(source_test main.cpp)
-#add_executable(test ${source_test})
-#target_link_libraries(test ${libs})
+set(source_test main.cpp)
+add_executable(test ${source_test})
+target_link_libraries(test ${libs})
 
 set(source_bezier examples/bezier/main.cpp)
 

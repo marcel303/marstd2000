@@ -7,12 +7,14 @@
 // If you redistribute it, this message must remain intact. 
 //////////////////////////////////////////////////////////////////////
 
-#ifdef TEST
-
-#include <allegro.h>
+#include <algorithm>
 #include <vector>
 #include "marstd.h"
 #include "marx.h"
+#include "framework.h"
+
+#define SCREEN_W 800
+#define SCREEN_H 600
 
 //////////////////////////////////////////////////////////////////////
 // Material flags.
@@ -23,9 +25,9 @@
 #define MAT_TEXGEN_SCREEN	0x0002		// Use vertex XY coordinates after transform.
 #define MAT_TEXGEN_SKY		0x0004		// Use vertex XY coordinates after transform in special sky texgen.
 // Start of rendering properties.
-#define MAT_OUTLINE		0x0010		// Outline polygons.
+#define MAT_OUTLINE			0x0010		// Outline polygons.
 #define MAT_TRANSPARENT		0x0020		// Draw polygons using blending.
-#define MAT_GRGB		0x0040		// Draw using gouraud RGB interpolation.
+#define MAT_GRGB			0x0040		// Draw using gouraud RGB interpolation.
 // Start of geometric properties.
 #define MAT_DOUBLESIDED		0x0100		// Don't apply backface culling.
 
@@ -43,7 +45,7 @@
 
 typedef struct {
 	int flags;
-	BITMAP* texture;
+	GLuint texture;
 } material_t;
 
 static std::vector<material_t*> materials;
@@ -58,13 +60,7 @@ typedef struct {
 
 //////////////////////////////////////////////////////////////////////
 
-static PALETTE palette;		// Palette for 8BPP modes.
-static RGB_MAP rgbmap;		// RGB lookup table for 8BPP modes.
-static COLOR_MAP colormap;	// Colourmap for 8BPP lighting.
-static BITMAP* cmap[2];		// Colourmaps.
-static ZBUFFER* zbuffer;	// Z-buffer.
 static int br, bg, bb;		// Background colour.
-static int use_zbuffer;	// Use z-buffering?
 static CVector p, v, r;		// Position, velocity, rotation.
 static CPlane plane[6];		// Clipping planes (viewing frustum).
 static CMatrix matrix;		// Transformation matrix.
@@ -106,7 +102,7 @@ static void create_world(CBsp& bsp);
 static void initialize(CBsp& bsp);
 static int nearest_collision(CBsp& bsp, CVector& position, CVector& delta, float& t, CVector& normal);
 static void move_pushback(CBsp& bsp, CVector& position, CVector& delta, CVector& deltaout);
-static BITMAP* my_load_bitmap(char* filename);
+static GLuint my_load_bitmap(const char* filename);
 
 //////////////////////////////////////////////////////////////////////
 
@@ -120,53 +116,20 @@ int main(int argc, char* argv[]) {
 
 //--------------------------------------------------------------------
 // Initialize system.
-        
-	allegro_init();
-	install_keyboard();
-	install_mouse();
-	int bpp = desktop_color_depth() * 1;
-//	int bpp = 16;
-	if (!bpp)
-		bpp = 16;
-	set_color_depth(bpp);
-	set_gfx_mode(GFX_AUTODETECT_WINDOWED, 320, 240, 0, 0);
-
-	// Create palette, rgb table, and colour table.
-
-	if (1) {
-		BITMAP* tmp = load_bitmap("./data/palette.bmp", palette);
-		destroy_bitmap(tmp);
-	} else
-		generate_332_palette(palette);
-	set_palette(palette);
-	create_rgb_table(&rgbmap, palette, 0);
-	rgb_map = &rgbmap;        
-	create_light_table(&colormap, palette, 0, 0, 0, 0);
-	color_map = &colormap;        
-
-	// Create color map and z buffer.
 	
-	if (1) {
-		cmap[0] = create_bitmap(SCREEN_W, SCREEN_H);
-		cmap[1] = create_bitmap(SCREEN_W, SCREEN_H);		
-	} else {
-		cmap[0] = create_video_bitmap(SCREEN_W, SCREEN_H);
-		cmap[1] = create_video_bitmap(SCREEN_W, SCREEN_H);		
-	}		
+	if (!framework.init(0, nullptr, SCREEN_W, SCREEN_H))
+		return -1;
 	
-	zbuffer = create_zbuffer(cmap[0]);
-	set_zbuffer(zbuffer);
-
-        // Define materials.
+	// Define materials.
         
-	INIT_MATERIAL(mat_default,		my_load_bitmap("default.bmp"),		MAT_TEXGEN_UV);
-	INIT_MATERIAL(mat_bezier,		my_load_bitmap("bezier.bmp"),		/*MAT_GRGB*/MAT_TEXGEN_UV|MAT_DOUBLESIDED);
+	INIT_MATERIAL(mat_default,			my_load_bitmap("default.bmp"),		MAT_TEXGEN_UV);
+	INIT_MATERIAL(mat_bezier,			my_load_bitmap("bezier.bmp"),		/*MAT_GRGB*/MAT_TEXGEN_UV|MAT_DOUBLESIDED);
 	INIT_MATERIAL(mat_large_cube,		my_load_bitmap("large_cube.bmp"),	MAT_TEXGEN_UV|MAT_DOUBLESIDED);
-	INIT_MATERIAL(mat_large_cilinder,	my_load_bitmap("zola.bmp"),		MAT_TEXGEN_UV|MAT_DOUBLESIDED);
-	INIT_MATERIAL(mat_cone,			my_load_bitmap("cone.bmp"),		MAT_TEXGEN_SCREEN|MAT_OUTLINE);
-	INIT_MATERIAL(mat_donut, 		my_load_bitmap("donut.bmp"),		MAT_TEXGEN_UV);
-	INIT_MATERIAL(mat_cilinder,		my_load_bitmap("default.bmp"),		MAT_TEXGEN_SKY|MAT_OUTLINE|MAT_TRANSPARENT|MAT_DOUBLESIDED);
-	INIT_MATERIAL(mat_cubes,		my_load_bitmap("cubes.bmp"),		MAT_TEXGEN_UV);
+	INIT_MATERIAL(mat_large_cilinder,	my_load_bitmap("zola.bmp"),			MAT_TEXGEN_UV|MAT_DOUBLESIDED);
+	INIT_MATERIAL(mat_cone,				my_load_bitmap("cone.bmp"),			MAT_TEXGEN_SCREEN|MAT_OUTLINE);
+	INIT_MATERIAL(mat_donut, 			my_load_bitmap("donut.bmp"),		MAT_TEXGEN_UV);
+	INIT_MATERIAL(mat_cilinder,			my_load_bitmap("default.bmp"),		MAT_TEXGEN_SKY|MAT_OUTLINE|MAT_TRANSPARENT|MAT_DOUBLESIDED);
+	INIT_MATERIAL(mat_cubes,			my_load_bitmap("cubes.bmp"),		MAT_TEXGEN_UV);
 	INIT_MATERIAL(mat_isosurface,		my_load_bitmap("notexture"),		MAT_TEXGEN_UV|MAT_DOUBLESIDED|MAT_TRANSPARENT);
 
 	// Create geometry.
@@ -203,7 +166,7 @@ int main(int argc, char* argv[]) {
 			ball[i].a = 0.3;
 		}
 		iso.calculate(ball, 3);
-//		iso.output(mesh);
+		//iso.output(mesh);
 		mesh.transform(MARX::matrix);
 		reverse(mesh);
 		mesh.paint(&mat_isosurface);
@@ -222,9 +185,6 @@ int main(int argc, char* argv[]) {
 		
 		initialize(bsp);
 		
-		clear(screen);
-		textprintf(screen, font, 0, 0,  makecol(255, 255, 255), "please be patient. generating BSP.");
-		textprintf(screen, font, 0, 10, makecol(255, 255, 255), "%d polygons", bsp.poly_count);		
 		if (1)
 			bsp.split();
 		else
@@ -237,8 +197,10 @@ int main(int argc, char* argv[]) {
 //--------------------------------------------------------------------
 // Main loop.   		
 
-	while (!key[KEY_ESC]) {
+	while (!keyboard.wentDown(SDLK_ESCAPE)) {
 
+		framework.process();
+		
 		static int t = 0;
 		
 //--------------------------------------------------------------------
@@ -248,30 +210,30 @@ int main(int argc, char* argv[]) {
 		
 		#if 0
 		
-		if (key[KEY_LEFT])
+		if (keyboard.isDown(SDLK_LEFT))
 			r[1] += 0.025;
-		if (key[KEY_RIGHT])
+		if (keyboard.isDown(SDLK_RIGHT))
 			r[1] -= 0.025;
 			
 		#endif
 			
-		if (key[KEY_A])
+		if (keyboard.isDown(SDLK_a))
 			v[1] -= 0.07;
-		if (key[KEY_Z])
+		if (keyboard.isDown(SDLK_z))
 			v[1] += 0.02;
 				
 		float a = 0.0;
 
-		if (key[KEY_UP] || mouse_b & 1)
+		if (keyboard.isDown(SDLK_UP) || mouse.isDown(BUTTON_LEFT))
 			a += 0.02;          				
-		if (key[KEY_DOWN] || mouse_b & 2)
+		if (keyboard.isDown(SDLK_DOWN) || mouse.isDown(BUTTON_RIGHT))
 			a -= 0.02;  			
   		
 		float a2 = 0.0;
 		
-		if (key[KEY_LEFT])
+		if (keyboard.isDown(SDLK_LEFT))
 			a2 -= 0.02;
-		if (key[KEY_RIGHT])
+		if (keyboard.isDown(SDLK_RIGHT))
 			a2 += 0.02;
 			
   		if (a) {
@@ -288,9 +250,9 @@ int main(int argc, char* argv[]) {
    	
 		v[1] += 0.01;
 
-                // Jump if on the ground.
+		// Jump if on the ground.
 
-        if (key[KEY_SPACE]) {
+        if (keyboard.isDown(SDLK_SPACE)) {
             CVector tmp;
             tmp.set(0.0, 0.2, 0.0);
             float t_t;
@@ -301,15 +263,17 @@ int main(int argc, char* argv[]) {
 
 		// Mouse input.
 		
-		int mx, my;
-		get_mouse_mickeys(&mx, &my);
+		const int mx = mouse.dx;
+		const int my = mouse.dy;
 		
    		static float vr[2] = { 0.0, 0.0 };
      
-      	vr[0] += my * 0.001;	
-      	vr[1] -= mx * 0.001;
-           
         #if 0
+		
+        vr[0] += my * 0.001;
+      	vr[1] -= mx * 0.001;
+		
+      	#else
           	
 		r[0] += my*0.01;
 		r[1] -= mx*0.01;
@@ -338,39 +302,24 @@ int main(int argc, char* argv[]) {
         v = deltaout / 0.1;
 
 		v *= 0.99;
-			
-		if (key[KEY_R])
-			use_zbuffer = 1;
-		else
-   			use_zbuffer = 0;				
 
 		t++;
 
 //--------------------------------------------------------------------
 // Render.
 
-		// Set BPP dependent fog colour and shader.
+		// Set fog colour.
 		
-		if (bpp != 8) {
-			br = 191;
-			bg = 255;
-			bb = 127;
-            br = 63;
-            bg = 31;
-            bb = 15;
-			set_blender_mode(blend15, blend16, blend24, br, bg, bb, 255);
-		} else {
-			br = 0;
-			bg = 0;
-			bb = 0;
-			set_trans_blender(0, 0, 0, 255);
-		}
+		br = 0;
+		bg = 0;
+		bb = 0;
 		
 		// Clear color map.   			
 		
-		clear_to_color(cmap[0], makecol(br, bg, bb));
-
-		set_projection_viewport(0, 0, cmap[0]->w, cmap[0]->h);
+		framework.beginDraw(br, bg, bb, 0);
+		
+		projectPerspective3d(90.f, .01f, 1000.f);
+		gxScalef(1, -1, 1);
 		
    		// Setup matrix.
      	
@@ -383,9 +332,6 @@ int main(int argc, char* argv[]) {
 		calculate_frustum();
    		
         // Clear depth map.
-        	
-   		if (use_zbuffer)
-	   		clear_zbuffer(zbuffer, 0.0);
    			
    		memset(&stats, 0, sizeof(stats));
    		
@@ -395,54 +341,42 @@ int main(int argc, char* argv[]) {
 
 		// Show statistics.
 
-        if (key[KEY_S]) {
+        if (keyboard.isDown(SDLK_s)) {
+        #if 0 // todo
 			text_mode(-1);
 			textprintf(cmap[0], font, 0, 0, makecol(255, 255, 255), "%d", t);
+		#endif
 		}			
-		if (key[KEY_D]) {			
+		if (keyboard.isDown(SDLK_d)) {
+		#if 0 // todo
 			text_mode(-1);		
 			textprintf(cmap[0], font, 0, 15, makecol(255, 255, 255), "VBSP   : %d", stats.draw_vbsp_count);
 			textprintf(cmap[0], font, 0, 25, makecol(255, 255, 255), "EBSP   : %d", stats.draw_ebsp_count);
 			textprintf(cmap[0], font, 0, 35, makecol(255, 255, 255), "CBSP   : %d", stats.draw_cbsp_count);
 			textprintf(cmap[0], font, 0, 45, makecol(255, 255, 255), "POLY  : %d", stats.draw_poly_count);
 			textprintf(cmap[0], font, 0, 55, makecol(255, 255, 255), "VERTEX: %d", stats.draw_vertex_count);
+		#endif
 		}
 
 //--------------------------------------------------------------------
 // Make back buffer visible.
 		
-		if (!is_video_bitmap(cmap[0])) {
-            if (key[KEY_V])
-                vsync();
-			blit(cmap[0], screen, 0, 0, 0, 0, cmap[0]->w, cmap[0]->h);
-		} else
-			show_video_bitmap(cmap[0]);
-		
-		std::swap(cmap[0], cmap[1]);
+		framework.endDraw();
 
 	}
 	
 //--------------------------------------------------------------------
 // Clean up and shutdown system.
-  	
-  	p_material_ptr ptr;
-  	for (ptr = materials.begin(); ptr != materials.end(); ptr++) {
-  		if ((*ptr)->texture)
-  			destroy_bitmap((*ptr)->texture);
-  	}
-  	
+	
 	if (polydata)
 		delete[] polydata;
 	polydata = 0;			
 
-	destroy_zbuffer(zbuffer);
-	destroy_bitmap(cmap[0]);
-	destroy_bitmap(cmap[1]);	
-
+	framework.shutdown();
+	
 	return 0;
 	
 }
-END_OF_MAIN();
 
 //--------------------------------------------------------------------
 
@@ -505,7 +439,7 @@ static void calculate_frustum() {
 
 static int sphere_out_frustum(CSphere& sphere) {
 
-	if (key[KEY_T])
+	if (keyboard.isDown(SDLK_t))
 		return 0;
 		
 	for (int i=0; i<6; i++)
@@ -520,7 +454,7 @@ static int sphere_out_frustum(CSphere& sphere) {
 
 static int box_in_frustum(CVector& mins, CVector& maxs) {
 
-	if (key[KEY_T])
+	if (keyboard.isDown(SDLK_t))
 		return 1;
 
 	float x = mins[0];
@@ -598,28 +532,16 @@ static void draw_bsp(CBsp* bsp) {
 		stats.draw_ebsp_count++;
  	
 		float d = bsp->p * p;
-
-		// Reverse drawing when using z-buffered rendering to maximize overdraw.
 		
 		if (d > 0.0) {
 
-			if (!use_zbuffer) {
-				draw_bsp(bsp->b_b);
-				draw_bsp(bsp->b_f);
-			} else {				
-				draw_bsp(bsp->b_f);
-				draw_bsp(bsp->b_b);			
-			}
+			draw_bsp(bsp->b_b);
+			draw_bsp(bsp->b_f);
 			
 		} else {
 
-			if (!use_zbuffer) {
-				draw_bsp(bsp->b_f);
-				draw_bsp(bsp->b_b);
-			} else {				
-				draw_bsp(bsp->b_b);
-				draw_bsp(bsp->b_f);
-			}				
+			draw_bsp(bsp->b_f);
+			draw_bsp(bsp->b_b);
 			
 		}
 
@@ -646,130 +568,99 @@ static void draw_poly(CPoly* p) {
 	stats.draw_vertex_count += p->edge_count;	
 	stats.draw_poly_count++;
 	
-	const int max_lc = 20;
+	if (data->mat->flags & MAT_TRANSPARENT)
+		setBlend(BLEND_ALPHA);
+	else
+		setBlend(BLEND_OPAQUE);
 	
-	static int initialized = 0;
-	
-	static V3D_f t_vold[max_lc];
-	static V3D_f t_vnew[max_lc*8];
-	static V3D_f t_vtmp[max_lc*8];
-	static V3D_f* vold[max_lc];
-	static V3D_f* vnew[max_lc*8];
-	static V3D_f* vtmp[max_lc*8];
-	static int itmp[max_lc*8];
-	
-	if (!initialized) {
-		for (int i=0; i<max_lc; i++)
-			vold[i] = &t_vold[i];
-		for (int i=0; i<max_lc*8; i++) {
-			vnew[i] = &t_vnew[i];
-			vtmp[i] = &t_vtmp[i];
+	gxSetTexture((data->mat->flags & MAT_GRGB) ? 0 : data->mat->texture);
+	{
+		gxBegin(GL_TRIANGLE_FAN);
+		{
+			CEdge* l = p->edge_head;
+			
+			for (int i = 0; i < p->edge_count; ++i)
+			{
+				float x;
+				float y;
+				float z;
+				
+				matrix.apply(l->p[0], l->p[1], l->p[2], x, y, z);
+				
+				// Generate texture coordinates.
+				
+				float u = l->t[0][0];
+				float v = l->t[0][1];
+				
+				if (data->mat->flags & MAT_TEXGEN_SCREEN) {
+					float iz = 1.0/z;
+					u = x*iz;
+					v = y*iz;
+				} else if (data->mat->flags & MAT_TEXGEN_SKY) {
+					float iz = 1.0/z;
+					u = x*iz-r[1];
+					v = y*iz+r[0];
+				}
+				
+				// Add fog.
+		
+				float t = z/distance;
+			#if 0 // disabled clamp since we don't do clipping anymore
+				if (t < 0.f)
+					t = 0.f;
+				else if (t > 1.f)
+					t = 1.f;
+			#endif
+				
+				float r = l->c[0];
+				float g = l->c[1];
+				float b = l->c[2];
+				
+				if (data->mat->flags & MAT_GRGB) {
+					r = (r * ( 1.f - t) + br * t);
+					g = (g * ( 1.f - t) + bg * t);
+					b = (b * ( 1.f - t) + bb * t);
+				} else {
+					r = 255 * (1.f - t) + br * t;
+					g = 255 * (1.f - t) + bg * t;
+					b = 255 * (1.f - t) + bb * t;
+				}
+				
+				gxTexCoord2f(u, v);
+				gxColor4ub(r, g, b, 192);
+				gxVertex3f(x, y, z);
+				l = l->next;
+			}
 		}
-		initialized = 1;
+		gxEnd();
 	}
-
-        static float aspect = SCREEN_H/float(SCREEN_W);
-        
-	CVector m;
-	CEdge* l = p->edge_head;
-	for (int i=0; i<p->edge_count; i++) {
-		matrix.apply(l->p[0], l->p[1], l->p[2], vold[i]->x, vold[i]->y, vold[i]->z);
-		vold[i]->x *= aspect;
-//		m += CVector(vold[i]->x, vold[i]->y, vold[i]->z);
-		// Will need to interpolate these.
-		if (data->mat->flags & MAT_TEXGEN_UV) {
-			vold[i]->u = l->t[0][0];
-			vold[i]->v = l->t[0][1];
+	gxSetTexture(0);
+	
+	if ((bdata->mat->flags & MAT_OUTLINE) || keyboard.isDown(SDLK_i))
+	{
+		gxColor3ub(63, 63, 63);
+		
+		gxBegin(GL_LINE_LOOP);
+		{
+			CEdge* l = p->edge_head;
+			
+			for (int i = 0; i < p->edge_count; ++i)
+			{
+				float x;
+				float y;
+				float z;
+			
+				matrix.apply(l->p[0], l->p[1], l->p[2], x, y, z);
+				
+				gxVertex3f(x, y, z);
+				
+				l = l->next;
+			}
 		}
-		// Will need to interpolate these too.
-		if (data->polytype == POLYTYPE_GRGB)
-	                vold[i]->c = makecol24((int)l->c[0], (int)l->c[1], (int)l->c[2]);
-		l = l->next;
+		gxEnd();
 	}
-	m /= p->edge_count;
 	
-   	int type = data->polytype;
-
-	// Use z-buffering? If so, set the bit so clip3d_f knows, just to be safe.
-	
-	if (use_zbuffer)
-		type |= POLYTYPE_ZBUF;			
-  	
-	// Clip against planes.
-   	
-	int new_lc = clip3d_f(type, 0.01, distance, p->edge_count, (const V3D_f** )vold, vnew, vtmp, itmp);
-
-	// Any vertices left?
-	
-	if (new_lc < 3)
-		return;
-
-	// Process clipped vertices.
-	
-	for (int i=0; i<new_lc; i++) {
-	
-		// Generate texture coordinates.
-		
-		if (data->mat->flags & MAT_TEXGEN_SCREEN) {
-			float iz = 1.0/vnew[i]->z;
-			vnew[i]->u = vnew[i]->x*iz;
-			vnew[i]->v = vnew[i]->y*iz;
-		} else if (data->mat->flags & MAT_TEXGEN_SKY) {
-			float iz = 1.0/vnew[i]->z;
-			vnew[i]->u = vnew[i]->x*iz-r[1];
-			vnew[i]->v = vnew[i]->y*iz+r[0];
-		}
-		
-		// Project to screen space.
-		
-		persp_project_f(vnew[i]->x, vnew[i]->y, vnew[i]->z, &vnew[i]->x, &vnew[i]->y);
-		
-		// Add fog.
-		
-		int t = int(vnew[i]->z*255.0/distance);
-		if (t < 0)
-			t = 0;
-		else if (t > 255)
-  			t = 255;			
-		
-		if (data->polytype == POLYTYPE_GRGB) {
-			int r = getr24(vnew[i]->c);
-			int g = getg24(vnew[i]->c);
-			int b = getb24(vnew[i]->c);
-			r = (r * ( 255 - t) + br * t) >> 8;
-			g = (g * ( 255 - t) + bg * t) >> 8;
-			b = (b * ( 255 - t) + bb * t) >> 8;   			
-			vnew[i]->c = makecol24(r, g, b);
-		} else {
-	  		vnew[i]->c = 255-t;
-		} 
-  
-       		// Scale texture coordinates. 				
-  			
-		if (data->mat->texture) {
-			vnew[i]->u *= data->mat->texture->w;
-			vnew[i]->v *= data->mat->texture->h;
-		}
-		
-	}
- 
- 	// Finally render the polygon.
- 	
-	polygon3d_f(cmap[0], type, data->mat->texture, new_lc, vnew);
-
-	#if 1
-        if (key[KEY_I] && m[2] > 0.01) {
-		persp_project_f(m[0], m[1], m[2], &m[0], &m[1]);
-		text_mode(-1);
-		textprintf(cmap[0], font, (int)m[0]-4, (int)m[1]-4, makecol(255, 255, 255), "%d/%d", new_lc, p->edge_count);
-	}
-	#endif
-
-	#if 1
-	if ((data->mat->flags & MAT_OUTLINE && !use_zbuffer) || key[KEY_I])
-		for (int i=0; i<new_lc; i++)
-			line(cmap[0], (int)vnew[i]->x, (int)vnew[i]->y, (int)vnew[(i+1)%new_lc]->x, (int)vnew[(i+1)%new_lc]->y, makecol(63, 63, 63));
-	#endif			
+	return;
 
 }
 
@@ -891,7 +782,7 @@ static void create_world(CBsp& bsp) {
 
 	// Add some random cubes.
 
-	for (int i=0; i<10*1; i++) {
+	for (int i=0; i<10*2; i++) {
 		MARX::matrix.push();
 		CVector p;
 		p[0] = ((rand()&4095)/4097.0-0.5)*4.0;
@@ -906,7 +797,7 @@ static void create_world(CBsp& bsp) {
 	
 	// Add some more random cubes.
 
-	for (int i=0; i<10*0; i++) {
+	for (int i=0; i<10*1; i++) {
 		MARX::matrix.push();
 		float x = ((rand()&4095)/4097.0-0.5)*25.0;
 		float y = ((rand()&4095)/4097.0-0.5)*5.0;
@@ -963,11 +854,11 @@ static void initialize(CBsp& bsp) {
 		// Find best texture plane.
 		
 		int plane;
-		if (ABS(p->plane.normal[0]) > ABS(p->plane.normal[1]))
+		if (fabsf(p->plane.normal[0]) > fabsf(p->plane.normal[1]))
 			plane = 0;
 		else
 			plane = 1;
-		if (ABS(p->plane.normal[2]) > ABS(p->plane.normal[plane]))
+		if (fabsf(p->plane.normal[2]) > fabsf(p->plane.normal[plane]))
 			plane = 2;
 
 		CEdge* edge = p->edge_head;
@@ -1029,7 +920,9 @@ static void initialize(CBsp& bsp) {
 		int ptex = 0;
 		int trans = 0;
 
+	#if 0
 		int type = POLYTYPE_FLAT;
+	#endif
 		
 		if (polydata[index].mat->flags & MAT_GRGB)
  			tex = 0;
@@ -1043,6 +936,7 @@ static void initialize(CBsp& bsp) {
 		if (polydata[index].mat->flags & MAT_TRANSPARENT)
 			trans = 1;
 		
+	#if 0
 		if (tex) {
 			if (ptex) {
 				if (trans)
@@ -1062,17 +956,9 @@ static void initialize(CBsp& bsp) {
 		} else {
 			type = POLYTYPE_GRGB;
 		}
-		
-		// Disable translucent rendering when colourmap is a video bitmap.
-		
-		if (is_video_bitmap(cmap[0])) {
-			if (type == POLYTYPE_ATEX_TRANS)
-				type = POLYTYPE_ATEX_LIT;
-			else if (type == POLYTYPE_PTEX_TRANS)
-				type = POLYTYPE_PTEX_LIT;				
-		}
 
 		polydata[index].polytype = type;
+	#endif
 		
 		poly = poly->next;
 		index++;
@@ -1137,7 +1023,7 @@ static void move_pushback(CBsp& bsp, CVector& position, CVector& delta, CVector&
 
 	deltaout = delta;
 	
-	if (key[KEY_M]) {
+	if (keyboard.isDown(SDLK_m)) {
         position += delta;
         return;
 	}
@@ -1148,7 +1034,7 @@ static void move_pushback(CBsp& bsp, CVector& position, CVector& delta, CVector&
 	
     float t;
     CVector normal;
-    CVector stored_normal[4];
+    CVector stored_normal[5];
         
     for (int i=0; i<5; i++) {
 
@@ -1221,33 +1107,34 @@ static void move_pushback(CBsp& bsp, CVector& position, CVector& delta, CVector&
 
 //--------------------------------------------------------------------
 
-static BITMAP* my_load_bitmap(char* filename) {
-	char filename2[512];
-	sprintf(filename2, "./data/%s", filename);
-	set_color_conversion(COLORCONV_DITHER);
-	int bpp = bitmap_color_depth(screen);
-	set_color_depth(32);
-	BITMAP* tmp = load_bitmap(filename2, 0);
-	if (!tmp) {
-		// Create a default texture with some standard colours.	
-		set_color_depth(bpp);
-		tmp = create_bitmap(128, 128);
-		clear_to_color(tmp, makecol(127, 127, 127));
-		text_mode(makecol(0, 0, 0));
-		textprintf_centre(tmp, font, tmp->w/2, (tmp->h-text_height(font))/2, makecol(255, 0, 0), "NO TEXTURE");
-		for (int i=0; i<5; i++)
-			rect(tmp, i, i, tmp->w-1-i, tmp->h-1-i, makecol(0, 0, 0));
-		return tmp;
+static GLuint my_load_bitmap(const char* filename) {
+	
+	const GLuint texture = getTexture(filename);
+	
+	if (texture)
+	{
+		glBindTexture(GL_TEXTURE_2D, texture);
+		checkErrorGL();
+		
+		// set filtering
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		checkErrorGL();
+		
+		glBindTexture(GL_TEXTURE_2D, 0);
+		checkErrorGL();
 	}
-	set_color_depth(bpp);
-	BITMAP* bmp = create_bitmap(tmp->w, tmp->h);
-	blit(tmp, bmp, 0, 0, 0, 0, tmp->w, tmp->h);
- 	destroy_bitmap(tmp);
-	return bmp;	
+	
+	return texture;
 }
 
 //--------------------------------------------------------------------
 // Custom blender functions. 3:1 transparency.
+
+#if 0
 
 static unsigned long blend15(unsigned long c1, unsigned long c2, unsigned long n) {
 	const unsigned long r = (getr15(c1)+getr15(c2)*3)>>2;
@@ -1269,3 +1156,4 @@ static unsigned long blend24(unsigned long c1, unsigned long c2, unsigned long n
 }
 
 #endif
+

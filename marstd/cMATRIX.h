@@ -172,8 +172,6 @@ class CMatrix {
 	 */
 	void mul() {
 		m[depth] = m[depth] * tmp;
-	// todo : check order is correct
-		//matrix_mul_f(&tmp, &m[depth], &m[depth]);
 	}
 	
  public:
@@ -293,7 +291,7 @@ class CMatrix {
  
 };
 
-#include "inline/cMATRIX.inl"
+//#include "inline/cMATRIX.inl"
 
 //---------------------------------------------------------------------------
 
