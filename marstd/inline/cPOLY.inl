@@ -33,10 +33,10 @@ inline CEdge* CPoly::add_head(CEdge* edge) {
 
 	MASSERT(edge, "");	
 	
-	if (edge_head)
-		edge->edge2 = edge_head;
-	else
-		edge->edge2 = 0;			
+	edge->edge2 = edge_head;
+	
+	if (edge_tail)
+		edge_tail->edge2 = edge;
 		
 	DLLIST_LINK_HEAD(edge_head, edge_tail, edge, edge_count);
 	
@@ -48,9 +48,10 @@ inline CEdge* CPoly::add_tail(CEdge* edge) {
 
 	MASSERT(edge, ""); 	
 	
+	edge->edge2 = edge_head;
+	
 	if (edge_tail)
  		edge_tail->edge2 = edge;
-	edge->edge2 = edge_head;
 	
 	DLLIST_LINK_TAIL(edge_head, edge_tail, edge, edge_count);
 	
@@ -100,7 +101,7 @@ inline void CPoly::init() {
   	
   	// edge->plane
   	
-    	edge1 = edge_head;
+	edge1 = edge_head;
 	while (edge1) {
 		edge2 = edge1->next ? edge1->next : edge_head;
 		CVector delta = edge2->p - edge1->p;
