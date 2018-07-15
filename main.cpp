@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
 			ball[i].a = 0.3;
 		}
 		iso.calculate(ball, 3);
-		//iso.output(mesh);
+		iso.output(mesh);
 		mesh.transform(MARX::matrix);
 		reverse(mesh);
 		mesh.paint(&mat_isosurface);
@@ -311,6 +311,7 @@ int main(int argc, char* argv[]) {
 		// Clear color map.   			
 		
 		framework.beginDraw(br, bg, bb, 0);
+		setFont("VeraMono.ttf");
 		
 		projectPerspective3d(90.f, .01f, 1000.f);
 		gxScalef(1, -1, 1);
@@ -332,24 +333,22 @@ int main(int argc, char* argv[]) {
         // Render BSP.
         	
 		draw_bsp(&bsp);
-
+		
 		// Show statistics.
-
+		
+		projectScreen2d();
+		setBlend(BLEND_ALPHA);
+		setColor(colorWhite);
+		
         if (keyboard.isDown(SDLK_s)) {
-        #if 0 // todo
-			text_mode(-1);
-			textprintf(cmap[0], font, 0, 0, makecol(255, 255, 255), "%d", t);
-		#endif
+			drawText(5, 5, 10, +1, +1, "%d", t);
 		}			
 		if (keyboard.isDown(SDLK_d)) {
-		#if 0 // todo
-			text_mode(-1);		
-			textprintf(cmap[0], font, 0, 15, makecol(255, 255, 255), "VBSP   : %d", stats.draw_vbsp_count);
-			textprintf(cmap[0], font, 0, 25, makecol(255, 255, 255), "EBSP   : %d", stats.draw_ebsp_count);
-			textprintf(cmap[0], font, 0, 35, makecol(255, 255, 255), "CBSP   : %d", stats.draw_cbsp_count);
-			textprintf(cmap[0], font, 0, 45, makecol(255, 255, 255), "POLY  : %d", stats.draw_poly_count);
-			textprintf(cmap[0], font, 0, 55, makecol(255, 255, 255), "VERTEX: %d", stats.draw_vertex_count);
-		#endif
+			drawText(5, 15, 10, +1, +1, "VBSP   : %d", stats.draw_vbsp_count);
+			drawText(5, 25, 10, +1, +1, "EBSP   : %d", stats.draw_ebsp_count);
+			drawText(5, 35, 10, +1, +1, "CBSP   : %d", stats.draw_cbsp_count);
+			drawText(5, 45, 10, +1, +1, "POLY   : %d", stats.draw_poly_count);
+			drawText(5, 55, 10, +1, +1, "VERTEX : %d", stats.draw_vertex_count);
 		}
 
 //--------------------------------------------------------------------
