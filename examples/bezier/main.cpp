@@ -14,6 +14,8 @@
 #include "marstd.h"
 #include "framework.h"
 
+#define SOFTWARE_LIGHTING 1
+
 int main(int argc, char* argv[]) {
 
 //--------------------------------------------------------------------
@@ -22,7 +24,6 @@ int main(int argc, char* argv[]) {
 	framework.enableDepthBuffer = true;
 	
 	if (!framework.init(0, nullptr, 800, 600)) {
-		//allegro_message("Error: unable to install system drivers.");
 		return -1;
 	}
 	
@@ -125,7 +126,6 @@ int main(int argc, char* argv[]) {
 		glDepthFunc(GL_LESS);
 		glEnable(GL_DEPTH_TEST);		
 		
-	#if 0 // todo
 		// Setup and enable lighting.
 
 		GLfloat l_direction[2][4] =
@@ -139,7 +139,32 @@ int main(int argc, char* argv[]) {
 				{ 2.0, 2.0, 0.0, 1.0 },
 				{ 2.0, 0.0, 2.0, 1.0 }
 			};
-			
+		
+	#if SOFTWARE_LIGHTING
+		auto computeLightColor = [&] (CVector & n) -> Vec3
+		{
+			const Vec4 n_world = transformToWorld(Vec4(n[0], n[1], n[2], 0.f));
+
+			Vec3 color;
+
+			for (int i = 0; i < 2; ++i)
+			{
+				const float intensity =
+					l_direction[i][0] * n_world[0] +
+					l_direction[i][1] * n_world[1] +
+					l_direction[i][2] * n_world[2];
+				
+				if (intensity > 0.f)
+				{
+					color[0] += l_diffuse[i][0] * intensity;
+					color[1] += l_diffuse[i][1] * intensity;
+					color[2] += l_diffuse[i][2] * intensity;
+				}
+			}
+
+			return color;
+		};
+	#else
 		for (int i=0; i<2; i++) {   				
 			glLightfv(GL_LIGHT1+i, GL_POSITION, l_direction[i]);		
 			glLightfv(GL_LIGHT1+i, GL_DIFFUSE, l_diffuse[i]);
@@ -182,7 +207,13 @@ int main(int argc, char* argv[]) {
 	  			CVector n = d1 % d2;
 	  			n.normalize();
 				
+			#if SOFTWARE_LIGHTING
+				const Vec3 color1 = computeLightColor(n);
+				
+				gxColor4f(color1[0], color1[1], color1[2], 1.f);
+			#else
 				gxNormal3fv(n);
+			#endif
 				gxVertex3fv(p1);
 				gxVertex3fv(p2);
 				gxVertex3fv(p3);
@@ -199,8 +230,14 @@ int main(int argc, char* argv[]) {
 	  			d2 = p3-p2;
 	  			n = - (d1 % d2);
 	  			n.normalize();
-
+				
+			#if SOFTWARE_LIGHTING
+				const Vec3 color2 = computeLightColor(n);
+				
+				gxColor4f(color2[0], color2[1], color2[2], 1.f);
+			#else
 				gxNormal3fv(n);
+			#endif
 				gxVertex3fv(p1);
 				gxVertex3fv(p2);
 				gxVertex3fv(p3);
