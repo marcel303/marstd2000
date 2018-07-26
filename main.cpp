@@ -114,6 +114,8 @@ int main(int argc, char* argv[]) {
 	if (!framework.init(0, nullptr, SCREEN_W, SCREEN_H))
 		return -1;
 	
+	mouse.showCursor(false);
+	
 	// Define materials.
         
 	INIT_MATERIAL(mat_default,			my_load_bitmap("default.bmp"),		MAT_TEXGEN_UV);
