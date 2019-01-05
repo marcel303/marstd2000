@@ -110,8 +110,12 @@ int main(int argc, char* argv[]) {
 
 //--------------------------------------------------------------------
 // Initialize system.
+
+#if defined(CHIBI_RESOURCE_PATH)
+	changeDirectory(CHIBI_RESOURCE_PATH);
+#endif
 	
-	if (!framework.init(0, nullptr, SCREEN_W, SCREEN_H))
+	if (!framework.init(SCREEN_W, SCREEN_H))
 		return -1;
 	
 	mouse.showCursor(false);
@@ -196,6 +200,8 @@ int main(int argc, char* argv[]) {
 	while (!keyboard.wentDown(SDLK_ESCAPE)) {
 
 		framework.process();
+		
+		mouse.setRelative(true);
 		
 		static int t = 0;
 		

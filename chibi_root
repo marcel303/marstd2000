@@ -1,0 +1,3 @@
+global_group marstd
+	add marstd
+	add examples

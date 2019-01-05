@@ -1,0 +1,6 @@
+library marstd1
+	depend_library libgg
+	scan_files h traverse
+	scan_files inl traverse
+	add_files cISOSURFACE.cpp
+	header_path . expose

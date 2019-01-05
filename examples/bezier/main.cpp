@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
 	
 	framework.enableDepthBuffer = true;
 	
-	if (!framework.init(0, nullptr, 800, 600)) {
+	if (!framework.init(800, 600)) {
 		return -1;
 	}
 	

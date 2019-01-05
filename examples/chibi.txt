@@ -1,0 +1,11 @@
+app marstd1-test
+	depend_library framework
+	depend_library marstd1
+	resource_path ../data
+	add_files ../main.cpp
+
+app marstd1-bezier
+	depend_library framework
+	depend_library marstd1
+	resource_path bezier
+	add_files bezier/main.cpp
