@@ -3,4 +3,5 @@ library marstd1
 	scan_files h traverse
 	scan_files inl traverse
 	add_files cISOSURFACE.cpp
+	add_files marx.cpp
 	header_path . expose
