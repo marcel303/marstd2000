@@ -14,10 +14,10 @@
 /** @file cBRUSH.h: CBrush implementation. */
 //////////////////////////////////////////////////////////////////////
 
-#include "CList.h"
+#include "cLIST.h"
 //#include "Cprim.h"	// FIXME: remove this include.
-#include "CPlane.h"
-#include "CPoly.h"
+#include "cPLANE.h"
+#include "cPOLY.h"
 
 /// Geometry: Brush class.
 /**

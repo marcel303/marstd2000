@@ -55,9 +55,9 @@ If you wrote some commercial program using this code, I'd like to know. Please m
 #include "cFILE.h"		// io: file
 
 // OLD CODE. DON'T USE!
-#include "Cbsp.h"		// bsp operations
-#include "Cbrush.h"		// geometry: brushes
+#include "cBSP.h"		// bsp operations
+#include "cBRUSH.h"		// geometry: brushes
 #include "Ccsg.h"		// geometry: csg
-#include "Cbezier.h"		// geometry: bezier patches
+#include "cBEZIER.h"		// geometry: bezier patches
 
 #endif

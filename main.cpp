@@ -7,6 +7,7 @@
 // If you redistribute it, this message must remain intact. 
 //////////////////////////////////////////////////////////////////////
 
+#include <GL/glew.h> // glTexParameter
 #include <algorithm>
 #include <vector>
 #include "marstd.h"
@@ -45,7 +46,7 @@
 
 typedef struct {
 	int flags;
-	GLuint texture;
+	GxTextureId texture;
 } material_t;
 
 static std::vector<material_t*> materials;
@@ -102,7 +103,7 @@ static void create_world(CBsp& bsp);
 static void initialize(CBsp& bsp);
 static int nearest_collision(CBsp& bsp, CVector& position, CVector& delta, float& t, CVector& normal);
 static void move_pushback(CBsp& bsp, CVector& position, CVector& delta, CVector& deltaout);
-static GLuint my_load_bitmap(const char* filename);
+static GxTextureId my_load_bitmap(const char* filename);
 
 //////////////////////////////////////////////////////////////////////
 
@@ -576,7 +577,7 @@ static void draw_poly(CPoly* p) {
 	
 	gxSetTexture((data->mat->flags & MAT_GRGB) ? 0 : data->mat->texture);
 	{
-		gxBegin(GL_TRIANGLE_FAN);
+		gxBegin(GX_TRIANGLE_FAN);
 		{
 			CEdge* l = p->edge_head;
 			
@@ -641,7 +642,7 @@ static void draw_poly(CPoly* p) {
 	{
 		gxColor3ub(63, 63, 63);
 		
-		gxBegin(GL_LINE_LOOP);
+		gxBegin(GX_LINE_LOOP);
 		{
 			CEdge* l = p->edge_head;
 			
@@ -1108,9 +1109,9 @@ static void move_pushback(CBsp& bsp, CVector& position, CVector& delta, CVector&
 
 //--------------------------------------------------------------------
 
-static GLuint my_load_bitmap(const char* filename) {
+static GxTextureId my_load_bitmap(const char* filename) {
 	
-	const GLuint texture = getTexture(filename);
+	const GxTextureId texture = getTexture(filename);
 	
 	if (texture)
 	{

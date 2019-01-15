@@ -11,6 +11,7 @@
 // CBezier3 patch example.
 //////////////////////////////////////////////////////////////////////
 
+#include <GL/glew.h> // glPolygonMode
 #include "marstd.h"
 #include "framework.h"
 
@@ -123,18 +124,17 @@ int main(int argc, char* argv[]) {
 		
 		// Prepare buffers.
 		
-		glDepthFunc(GL_LESS);
-		glEnable(GL_DEPTH_TEST);		
+		setDepthTest(true, DEPTH_LESS);
 		
 		// Setup and enable lighting.
 
-		GLfloat l_direction[2][4] =
+		float l_direction[2][4] =
 			{		
 				{ 0.0, 0.0, +1.0, 0.0 },
 				{ 0.0, 0.0, -1.0, 0.0 }
 			};
 			
-		GLfloat l_diffuse[2][4] =
+		float l_diffuse[2][4] =
 			{		
 				{ 2.0, 2.0, 0.0, 1.0 },
 				{ 2.0, 0.0, 2.0, 1.0 }
@@ -189,8 +189,8 @@ int main(int argc, char* argv[]) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-			
-		gxBegin(GL_TRIANGLES); {
+		
+		gxBegin(GX_TRIANGLES); {
           		
   		for (int i=0; i<bezier.resolution-1; i++) {
 

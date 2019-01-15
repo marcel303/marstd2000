@@ -132,7 +132,7 @@ class CFile {
 		va_start(ap, format);
 		vsprintf(text, format, ap);
 		va_end(ap);
-		if (fprintf(f, text) <= 0)
+		if (fprintf(f, "%s", text) <= 0)
 			return false;
 		return true;		
  	}
