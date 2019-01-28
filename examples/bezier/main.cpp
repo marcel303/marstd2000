@@ -11,7 +11,6 @@
 // CBezier3 patch example.
 //////////////////////////////////////////////////////////////////////
 
-#include <GL/glew.h> // glPolygonMode
 #include "marstd.h"
 #include "framework.h"
 
@@ -185,10 +184,7 @@ int main(int argc, char* argv[]) {
   		
 		// FIXME: It would be better to output using a triangle strip.
 
-		if (keyboard.isDown(SDLK_l))
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		else
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		pushWireframe(keyboard.isDown(SDLK_l));
 		
 		gxBegin(GX_TRIANGLES); {
           		
@@ -247,6 +243,8 @@ int main(int argc, char* argv[]) {
 		} 
 
 		} gxEnd();
+		
+		popWireframe();
 
 //--------------------------------------------------------------------
 // Make back buffer visible.
