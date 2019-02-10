@@ -1,3 +1,4 @@
-global_group marstd
+push_group marstd
 	add marstd
 	add examples
+pop_group
