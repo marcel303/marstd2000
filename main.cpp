@@ -7,7 +7,6 @@
 // If you redistribute it, this message must remain intact. 
 //////////////////////////////////////////////////////////////////////
 
-#include <GL/glew.h> // glTexParameter
 #include <algorithm>
 #include <vector>
 #include "marstd.h"
@@ -126,7 +125,7 @@ int main(int argc, char* argv[]) {
 	INIT_MATERIAL(mat_default,			my_load_bitmap("default.bmp"),		MAT_TEXGEN_UV);
 	INIT_MATERIAL(mat_bezier,			my_load_bitmap("bezier.bmp"),		MAT_GRGB|MAT_TEXGEN_UV|MAT_DOUBLESIDED|MAT_TRANSPARENT);
 	INIT_MATERIAL(mat_large_cube,		my_load_bitmap("large_cube.bmp"),	MAT_TEXGEN_UV|MAT_DOUBLESIDED);
-	INIT_MATERIAL(mat_large_cilinder,	my_load_bitmap("bezier.bmp"),			MAT_TEXGEN_UV|MAT_DOUBLESIDED);
+	INIT_MATERIAL(mat_large_cilinder,	my_load_bitmap("bezier.bmp"),		MAT_TEXGEN_UV|MAT_DOUBLESIDED);
 	INIT_MATERIAL(mat_cone,				my_load_bitmap("cone.bmp"),			MAT_TEXGEN_SCREEN|MAT_OUTLINE);
 	INIT_MATERIAL(mat_donut, 			my_load_bitmap("donut.bmp"),		MAT_TEXGEN_UV);
 	INIT_MATERIAL(mat_cilinder,			my_load_bitmap("default.bmp"),		MAT_TEXGEN_SKY|MAT_OUTLINE|MAT_TRANSPARENT|MAT_DOUBLESIDED);
@@ -576,6 +575,7 @@ static void draw_poly(CPoly* p) {
 		setBlend(BLEND_OPAQUE);
 	
 	gxSetTexture((data->mat->flags & MAT_GRGB) ? 0 : data->mat->texture);
+	gxSetTextureSampler(GX_SAMPLE_LINEAR, false);
 	{
 		gxBegin(GX_TRIANGLE_FAN);
 		{
@@ -1113,22 +1113,6 @@ static GxTextureId my_load_bitmap(const char* filename) {
 	
 	const GxTextureId texture = getTexture(filename);
 	
-	if (texture)
-	{
-		glBindTexture(GL_TEXTURE_2D, texture);
-		checkErrorGL();
-		
-		// set filtering
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		checkErrorGL();
-		
-		glBindTexture(GL_TEXTURE_2D, 0);
-		checkErrorGL();
-	}
-	
 	return texture;
+	
 }
