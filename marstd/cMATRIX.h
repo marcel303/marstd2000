@@ -226,8 +226,6 @@ class CMatrix {
 	 */	
 	void rotate(float x, float y, float z) {
 		tmp = Mat4x4(true).RotateX(x).RotateY(y).RotateZ(z);
-	// todo : check if euler order is correct
-		//get_rotation_matrix_f(&tmp, RAD2BIN(x), RAD2BIN(y), RAD2BIN(z));
 		mul();
 	}
 	/**
