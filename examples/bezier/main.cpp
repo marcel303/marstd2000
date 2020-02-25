@@ -21,6 +21,8 @@ int main(int argc, char* argv[]) {
 //--------------------------------------------------------------------
 // Initalize system.
 	
+	setupPaths(CHIBI_RESOURCE_PATHS);
+	
 	framework.enableDepthBuffer = true;
 	
 	if (!framework.init(800, 600)) {
