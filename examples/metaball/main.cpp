@@ -11,11 +11,12 @@
 // Metaballs example using CIsosurface class.
 //////////////////////////////////////////////////////////////////////
 
-#include <alleggl.h>
-#include <gl/glu.h>
 #include <math.h>
-#include "Atex.h"
+#include "data/engine/ShaderCommon.txt"
+#include "framework.h"
+#include "gx_mesh.h"
 #include "marstd.h"
+#include <SDL2/SDL.h>
 
 //////////////////////////////////////////////////////////////////////
 // Could also use isosurfaces to do csg add, substract, xor, etc like in some raytracers.
@@ -26,37 +27,29 @@ static void draw_triangles(int num, CIsosurfaceVertex* v);
 
 int main(int argc, char* argv[]) {
 
+	setupPaths(CHIBI_RESOURCE_PATHS);
+	
 //--------------------------------------------------------------------
 // Initialize system.
-
-	allegro_init();
 	
-	allegro_message("MarSTD\n------\nCIsosurface & CIsosurfaceMetaball classes example.\nPress L to render as wireframe.\nPress I to invert metaball energy values.\nPress mouse button 1 & 2 to change treshold.\n------\nLogic execution rate is currently equal to the number of frames per second it renders.\nIf the example appears to execute too fast, enable vsync in your display properties for OpenGL applications.\n------\nMarcel Smit, 2003.");
-
-	if (install_timer() < 0 || install_keyboard() < 0 || install_mouse() < 0) {
-		allegro_message("Error: unable to install system drivers.");
-		return -1;
-	}		
+	SDL_ShowSimpleMessageBox(
+		SDL_MESSAGEBOX_INFORMATION,
+		"MarSTD - CIsosurface & CIsosurfaceMetaball classes example.",
+		"Press L to render as wireframe.\nPress I to invert metaball energy values.\nPress mouse button 1 & 2 to change treshold.\n------\nLogic execution rate is currently equal to the number of frames per second it renders.\nIf the example appears to execute too fast, enable vsync in your display properties for OpenGL applications.\n------\nMarcel Smit, 2003.", nullptr);
 	
 //--------------------------------------------------------------------
-// Open an OpenGL window.
+// Open a window.
 
-	install_allegro_gl();
+	framework.enableDepthBuffer = true;
 	
-	allegro_gl_set(AGL_COLOR_DEPTH, 32);
-	allegro_gl_set(AGL_DOUBLEBUFFER, 1);
-	allegro_gl_set(AGL_Z_DEPTH, 24);
-	allegro_gl_set(AGL_SUGGEST, AGL_COLOR_DEPTH | AGL_DOUBLEBUFFER | AGL_Z_DEPTH);
-	
-	if (set_gfx_mode(GFX_OPENGL_FULLSCREEN, 800, 600, 0, 0) < 0) {
-		allegro_message("Error: unable to set OpenGL graphics mode.");
+	if (!framework.init(800, 600)) {
 		return -1;
 	}
 	
 	// Field with medium resolution.
  	
-	CIsosurface field;		// This is our CIsosurface object.
-	field.set_size(30, 30, 30);
+	CIsosurface field; // This is our CIsosurface object.
+	field.set_size(60, 60, 60);
 
 	// Four metaballs.
 	
@@ -65,14 +58,16 @@ int main(int argc, char* argv[]) {
 	
 	// Textures.
 	
-	GLuint envmap = TEX::load("data/envmap.bmp");
-	GLuint texmap = TEX::load("data/texmap.bmp");
+	GxTextureId envmap = getTexture("envmap.bmp");
+	GxTextureId texmap = getTexture("texmap.bmp");
  	
 //--------------------------------------------------------------------
 // Main loop.
  	
-	while (!key[KEY_ESC]) {
+	while (!keyboard.wentDown(SDLK_ESCAPE)) {
 	
+		framework.process();
+		
 		static float t = 0.0;
 		static float ry=0.0;	
 	
@@ -80,12 +75,13 @@ int main(int argc, char* argv[]) {
 // Input.
 	
 		int mx, my;
-		get_mouse_mickeys(&mx, &my);
+		mx = mouse.dx;
+		my = mouse.dy;
 		ry += mx;
 		
-		if (mouse_b & 1)
+		if (mouse.isDown(BUTTON_LEFT))
 			field.treshold += 0.01;
-		if (mouse_b & 2)
+		if (mouse.isDown(BUTTON_RIGHT))
 			field.treshold -= 0.01;			
    	
 //--------------------------------------------------------------------
@@ -123,14 +119,14 @@ int main(int argc, char* argv[]) {
 					dz = field.v[i][j][k].z * s1;					
 					d = dx*dx + dy*dy + dz*dz;
 					
-					e += 0.02*field.treshold/(d+0.001);
+					e += 0.02f * field.treshold / (d + 0.001f);
 					
                     dx = 0.0;
 					dy = field.v[i][j][k].y * s2;
 					dz = field.v[i][j][k].z;					
 					d = dx*dx + dy*dy + dz*dz;
 					
-					e += 0.02*field.treshold/(d+0.001);					
+					e += 0.02f * field.treshold / (d + 0.001f);
 					
 					field.v[i][j][k].e += e;
 				
@@ -144,7 +140,7 @@ int main(int argc, char* argv[]) {
 
 		// Invert?
 		
-		if (key[KEY_I]) {
+		if (keyboard.isDown(SDLK_i)) {
 			for (int i=0; i<field.sx; i++)
 				for (int j=0; j<field.sy; j++)
 					for (int k=0; k<field.sz; k++)
@@ -157,26 +153,20 @@ int main(int argc, char* argv[]) {
 //--------------------------------------------------------------------
 // Render.
 		
+		framework.beginDraw(0, 0, 0, 0);
+		
 		// Setup matrices.
-
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
 		
-		gluPerspective(90.0, SCREEN_W/(float)SCREEN_H, 0.001, 100.0);
+		projectPerspective3d(90.0, 0.001, 100.0);
 		
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
+		pushDepthTest(true, DEPTH_LESS);
 		
-		// Prepare buffers.
-		
-		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-		
-		glDepthFunc(GL_LESS);
-		glEnable(GL_DEPTH_TEST);		
+		setBlend(BLEND_OPAQUE);
 		
 		// Setup and enable lighting.
 
-		GLfloat l_direction[4][4] =
+	#if 0 // todo : enable lighting
+		const float l_direction[4][4] =
 			{		
 				{ +1.0, +1.0, 0.0, 0.0 },
 				{ -1.0, +1.0, 0.0, 0.0 },
@@ -184,101 +174,89 @@ int main(int argc, char* argv[]) {
 				{ +1.0, -1.0, 0.0, 0.0 }
 			};
 			
-		GLfloat l_diffuse[4][4] =
+		const float l_diffuse[4][4] =
 			{		
 				{ 1.5, 0.5, 0.5, 1.0 },
 				{ 1.5, 0.5, 1.5, 1.0 },
 				{ 0.5, 0.5, 1.5, 1.0 },
 				{ 2.0, 2.0, 2.0, 1.0 }
 			};
-			
+		
 		for (int i=0; i<4; i++) {   				
 			for (int j=0; j<3; j++)
 				if (l_diffuse[i][j] == 0.5)
 					l_diffuse[i][j] = 1.0;
-			glLightfv(GL_LIGHT1+i, GL_POSITION, l_direction[i]);		
+			glLightfv(GL_LIGHT1+i, GL_POSITION, l_direction[i]);
 			glLightfv(GL_LIGHT1+i, GL_DIFFUSE, l_diffuse[i]);
 			glEnable(GL_LIGHT1+i);
 		}
   			
 		glEnable(GL_LIGHTING);
+	#endif
 
 		// Camera transformation.
 		
-		glTranslatef(0.0, 0.0, -2.0);
-		glTranslatef(0.0, (sin(t*0.003)-0.5)/3.0, 0.0);		
-		glRotatef(ry/1.111, 0.0, 1.0, 0.0);
+		gxScalef(1, 1, -1);
+		gxTranslatef(0.0, 0.0, -2.0);
+		gxTranslatef(0.0, (sin(t*0.003)-0.5)/3.0, 0.0);
+		gxRotatef(ry/1.111, 0.0, 1.0, 0.0);
 
 		// Enable sphere mapping. This will give a nice reflective effect.
-		
-		glBindTexture(GL_TEXTURE_2D, envmap);
-		glEnable(GL_TEXTURE_2D);
-		
-		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);		
-		glEnable(GL_TEXTURE_GEN_S);
-		glEnable(GL_TEXTURE_GEN_T);
 
-		if (0) {
-			// Cannot enable culling while mirroring too, because normals aren't mirrored as well..		
-			glCullFace(GL_FRONT);		
-			glEnable(GL_CULL_FACE);
-		}
+		Shader shader("envmap");
+		setShader(shader); {
 		
-		CIsosurfaceVertex v[600];		// Vertex buffer.
-		field.output(200, v, draw_triangles);	// Render triangles using specified callback function.
+			shader.setTexture("envmap", 0, envmap, true);
+			
+			CIsosurfaceVertex v[600];             // Vertex buffer.
+			field.output(200, v, draw_triangles); // Render triangles using specified callback function.
+			
+		} clearShader();
 		
 		// Draw floor.
 	
-		glBindTexture(GL_TEXTURE_2D, texmap);
-  	
-		glDepthMask(0);		// We disable writing to the depth buffer. When drawing multiple unsorted transparent surfaces, you will need to do this or suffer the consequences.
-
-		glDisable(GL_LIGHTING);
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
+		gxSetTexture(texmap);
+		
+  		pushDepthWrite(false); // We disable writing to the depth buffer. When drawing multiple unsorted transparent surfaces, you will need to do this or suffer the consequences.
 	
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glEnable(GL_BLEND);	
-		glColor4f(1.0, 1.0, 1.0, 0.5);
+		gxColor4f(1.0, 1.0, 1.0, 0.5);
 	
-		glBegin(GL_QUADS); {
+		pushBlend(BLEND_ALPHA);
+		
+		gxBegin(GX_QUADS); {
 	
-			glTexCoord2f(0.0, 0.0);
-			glVertex3f(-2.0, -1.0, -2.0);
-			glTexCoord2f(1.0, 0.0);
-			glVertex3f(+2.0, -1.0, -2.0);
-			glTexCoord2f(1.0, 1.0);
-			glVertex3f(+2.0, -1.0, +2.0);
-			glTexCoord2f(0.0, 1.0);
-			glVertex3f(-2.0, -1.0, +2.0);   
+			gxTexCoord2f(0.0, 0.0);
+			gxVertex3f(-2.0, -1.0, -2.0);
+			gxTexCoord2f(1.0, 0.0);
+			gxVertex3f(+2.0, -1.0, -2.0);
+			gxTexCoord2f(1.0, 1.0);
+			gxVertex3f(+2.0, -1.0, +2.0);
+			gxTexCoord2f(0.0, 1.0);
+			gxVertex3f(-2.0, -1.0, +2.0);
 			
-		} glEnd();
+		} gxEnd();
 	
-		glEnable(GL_TEXTURE_GEN_S);
-		glEnable(GL_TEXTURE_GEN_T);		
-		glEnable(GL_LIGHTING);
+		popBlend();
 	
-		glDisable(GL_BLEND);
-	
-		glDepthMask(1);
+		popDepthWrite();
+		
+		popDepthTest();
  		
 //--------------------------------------------------------------------
 // Make back buffer visible.
 		
-		allegro_gl_flip();
+		framework.endDraw();
 	
 	}
 
 //--------------------------------------------------------------------
 // Shutdown system.
 
-	remove_allegro_gl();
-	allegro_exit();
+	framework.shutdown();
 	
 	return 0;
 
-} END_OF_MAIN();
+}
 
 //--------------------------------------------------------------------
 // Triangles drawer.
@@ -287,37 +265,43 @@ static void draw_triangles(int num, CIsosurfaceVertex* v) {
 
 	// Use line mode?
 	
-	if (key[KEY_L])
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	else		
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);		
-		
-	// Use vertex pointers to draw faster.
+	pushWireframe(keyboard.isDown(SDLK_l));
 	
-	glVertexPointer(3, GL_FLOAT, sizeof(CIsosurfaceVertex), &v->x);
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glNormalPointer(GL_FLOAT, sizeof(CIsosurfaceVertex), &v->na);
-	glEnableClientState(GL_NORMAL_ARRAY);	
+	// Prepare the mesh to draw.
 	
-	// Draw vertex arrays.
+	GxMesh mesh;
 	
-	glDrawArrays(GL_TRIANGLES, 0, num*3);
+	const GxVertexInput inputs[2] =
+	{
+		{ VS_POSITION, 3, GX_ELEMENT_FLOAT32, false, offsetof(CIsosurfaceVertex,  x), 0 },
+		{ VS_NORMAL,   3, GX_ELEMENT_FLOAT32, false, offsetof(CIsosurfaceVertex, na), 0 }
+	};
+	
+	GxVertexBuffer vb;
+	
+	mesh.setVertexBuffer(&vb, inputs, 2, sizeof(CIsosurfaceVertex));
+
+	// Draw mesh.
+	
+	vb.alloc(v, num * 3 * sizeof(CIsosurfaceVertex));
+	mesh.draw(GX_TRIANGLES, 0, num * 3);
+	vb.free();
 	
 	// Mirror y coordinate.
 	
 	for (int i=0; i<num*3; i++) {
 	
 		v[i].y = -v[i].y-2.0;
+		v[i].nb = -v[i].nb;
 	
 	}
 	
-	// Draw vertex arrays a second time.
+	// Draw the mesh a second time.
 	
-	glDrawArrays(GL_TRIANGLES, 0, num*3);	
+	vb.alloc(v, num * 3 * sizeof(CIsosurfaceVertex));
+	mesh.draw(GX_TRIANGLES, 0, num * 3);
+	vb.free();
 
-	if (0) {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		glDrawArrays(GL_TRIANGLES, 0, num*3);
-	}		
+	popWireframe();
 	
 }
