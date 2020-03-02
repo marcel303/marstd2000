@@ -9,3 +9,15 @@ app marstd1-bezier
 	depend_library marstd1
 	resource_path bezier
 	add_files bezier/main.cpp
+
+app marstd1-compact
+	depend_library framework
+	depend_library marstd1
+	resource_path compact
+	add_files compact/main.cpp
+
+app marstd1-metaball
+	depend_library framework
+	depend_library marstd1
+	resource_path metaball/data
+	add_files metaball/main.cpp
