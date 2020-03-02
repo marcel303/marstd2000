@@ -81,7 +81,7 @@ class CVector {
  	 * @return The magnitude of the vector, using pythagoras' theorem.
  	 */
 	float size() {
-		return sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+		return sqrtf(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 	}  
  	/**
      * @return The magnitude of the vector squared. This is faster than size() because it doesn't do a sqrt().
@@ -95,7 +95,7 @@ class CVector {
 	 * @see size()
 	 */
 	void normalize() {
-		float size = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+		float size = sqrtf(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 		MASSERT(size, "");		
 		if (size == 0.0)
 			return;

@@ -441,7 +441,7 @@ inline CSphere CBsp::bounding_sphere(CPoly* poly) {
 		
 	}
 	
-	sphere.radius = sqrt(sphere.radius) + eps*4.0;
+	sphere.radius = sqrtf(sphere.radius) + eps*4.0;
 	
 	return sphere;
 	
@@ -575,7 +575,7 @@ inline void CBsp::init_bounding_box() {
   	
 	}
  
-  	sphere.radius = sqrt(sphere.radius);	
+  	sphere.radius = sqrtf(sphere.radius);	
 	
 	// Calculate 'volume'.
 	

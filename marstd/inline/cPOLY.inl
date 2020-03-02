@@ -179,7 +179,7 @@ inline CSphere CPoly::calculate_sphere() {
   		
   	}
   	
-	sphere.radius = sqrt(sphere.radius);	
+	sphere.radius = sqrtf(sphere.radius);	
 	
 	return sphere;
 	

@@ -153,7 +153,7 @@ inline void CIsosurface::calculate_normals() {
 //				v[i][j][k].nb = v[i][j-1][k].e - v[i][j+1][k].e;
 //				v[i][j][k].nc = v[i][j][k-1].e - v[i][j][k+1].e;          								
 				#if 1
-				float is = 1.0/sqrt(na*na + nb*nb + nc*nc);
+				float is = 1.0f / sqrtf(na*na + nb*nb + nc*nc);
 				v[i][j][k].na = na * is;
 				v[i][j][k].nb = nb * is;
 				v[i][j][k].nc = nc * is;
