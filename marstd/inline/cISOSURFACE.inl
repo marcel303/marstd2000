@@ -68,6 +68,10 @@ inline void CIsosurface::set_size(int a_sx, int a_sy, int a_sz) {
                         	v[i][j][k].x = x;
                         	v[i][j][k].y = y;
                         	v[i][j][k].z = z;
+							
+                        	v[i][j][k].na = 0.0f;
+                        	v[i][j][k].nb = 0.0f;
+                        	v[i][j][k].nc = 0.0f;
                         }
 		}
 	}
@@ -149,15 +153,10 @@ inline void CIsosurface::calculate_normals() {
    				const float na = v[i-1][j][k].e - v[i+1][j][k].e;
    				const float nb = v[i][j-1][k].e - v[i][j+1][k].e;
    				const float nc = v[i][j][k-1].e - v[i][j][k+1].e;
-//   				v[i][j][k].na = v[i-1][j][k].e - v[i+1][j][k].e;
-//				v[i][j][k].nb = v[i][j-1][k].e - v[i][j+1][k].e;
-//				v[i][j][k].nc = v[i][j][k-1].e - v[i][j][k+1].e;          								
-				#if 1
 				float is = 1.0f / sqrtf(na*na + nb*nb + nc*nc);
 				v[i][j][k].na = na * is;
 				v[i][j][k].nb = nb * is;
 				v[i][j][k].nc = nc * is;
-				#endif
 			}  
 			
 }
