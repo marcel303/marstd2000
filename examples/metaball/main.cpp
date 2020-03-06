@@ -41,6 +41,7 @@ int main(int argc, char* argv[]) {
 // Open a window.
 
 	framework.enableDepthBuffer = true;
+	framework.enableRealTimeEditing = true;
 	
 	if (!framework.init(800, 600)) {
 		return -1;
@@ -134,10 +135,6 @@ int main(int argc, char* argv[]) {
 				
 		#endif				
 		
-		// We will be using the normal vectors, so calculate them.
-		
-		field.calculate_normals();
-
 		// Invert?
 		
 		if (keyboard.isDown(SDLK_i)) {
@@ -145,7 +142,11 @@ int main(int argc, char* argv[]) {
 				for (int j=0; j<field.sy; j++)
 					for (int k=0; k<field.sz; k++)
 						field.v[i][j][k].e = -field.v[i][j][k].e;
-		}		
+		}
+		
+		// We will be using the normal vectors, so calculate them.
+
+		field.calculate_normals();
 
 		t += 1.0;
 		ry += 0.3;
@@ -206,7 +207,7 @@ int main(int argc, char* argv[]) {
 		Shader shader("envmap");
 		setShader(shader); {
 		
-			shader.setTexture("envmap", 0, envmap, true);
+			shader.setTexture("envmap", 0, envmap, true, true);
 			
 			CIsosurfaceVertex v[600];             // Vertex buffer.
 			field.output(200, v, draw_triangles); // Render triangles using specified callback function.
@@ -216,6 +217,7 @@ int main(int argc, char* argv[]) {
 		// Draw floor.
 	
 		gxSetTexture(texmap);
+		gxSetTextureSampler(GX_SAMPLE_LINEAR, true);
 		
   		pushDepthWrite(false); // We disable writing to the depth buffer. When drawing multiple unsorted transparent surfaces, you will need to do this or suffer the consequences.
 	
@@ -239,6 +241,8 @@ int main(int argc, char* argv[]) {
 		popBlend();
 	
 		popDepthWrite();
+		
+		gxSetTexture(0);
 		
 		popDepthTest();
  		
