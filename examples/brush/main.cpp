@@ -1,4 +1,4 @@
-#include <allegro.h>
+#include "framework.h"
 #include "marstd.h"
 
 static void render();
@@ -6,21 +6,20 @@ static void render();
 int main(int argc, char* argv[])
 {
 
-    allegro_init();
-    install_keyboard();
-    set_color_depth(desktop_color_depth());
-    int w, h;
-    get_desktop_resolution(&w, &h);
-    set_gfx_mode(GFX_AUTODETECT_WINDOWED, w*3/4, h*3/4, 0, 0);
+	setupPaths(CHIBI_RESOURCE_PATHS);
+	
+	framework.init(800, 600);
     
-    while (!key[KEY_ESC])
+    while (!keyboard.wentDown(SDLK_ESCAPE))
     {
 
+		framework.process();
+		
         render();
 
     }
 
-} END_OF_MAIN();
+}
 
 static void render()
 {
@@ -31,13 +30,16 @@ static void render()
     
     CBrush brush;
 
-    int cx = SCREEN_W / 2;
-    int cy = SCREEN_H / 2;
+	int viewSx;
+	int viewSy;
+	framework.getCurrentViewportSize(viewSx, viewSy);
+	
+    int cx = viewSx / 2;
+    int cy = viewSy / 2;
     
     for (int i = 0; i < 5; i++)
     {
-    
-
+		
         CPlane* plane = brush.add(new CPlane);
         
         plane->normal[0] = sin(r + i * 2.0 * M_PI / 5.0);
@@ -61,11 +63,9 @@ static void render()
     CMesh* mesh = brush.mesh();
     
     CPoly* poly = mesh->poly_head;
-    
-    vsync();
-
-    clear(screen);
-    
+	
+    framework.beginDraw(0, 0, 0, 0);
+	
     while (poly)
     {
         CEdge* edge = poly->edge_head;
@@ -73,11 +73,14 @@ static void render()
         {
 //            edge->p[2] = 0;
 //            edge->edge2->p[2] = 0;
-            line(screen, cx+(int)(edge->p[0]+edge->p[2]*0.5), cy+(int)(edge->p[1]+edge->p[2]*0.5), cx+(int)(edge->edge2->p[0]+edge->edge2->p[2]*0.5), cy+(int)(edge->edge2->p[1]+edge->edge2->p[2]*0.5), makecol(255, 255, 255));
+			setColor(colorWhite);
+            drawLine(cx+(int)(edge->p[0]+edge->p[2]*0.5), cy+(int)(edge->p[1]+edge->p[2]*0.5), cx+(int)(edge->edge2->p[0]+edge->edge2->p[2]*0.5), cy+(int)(edge->edge2->p[1]+edge->edge2->p[2]*0.5));
             edge = edge->next;
         }
         poly = poly->next;
     }
+	
+    framework.endDraw();
     
     delete mesh;
 
