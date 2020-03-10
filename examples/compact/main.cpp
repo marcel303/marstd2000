@@ -83,9 +83,12 @@ int main() {
 				c = Color(127, 127, 127);
 			} else if (edge.poly1->flags && edge.poly2->flags) {
 				// Both polygons are visible.
-				//continue;
-				if (edge.poly1->plane.normal * edge.poly2->plane.normal < 0.0)
-					c = Color(191, 191, 191);
+				if (mouse.isDown(BUTTON_LEFT))
+					continue;
+				if (edge.poly1->plane.normal * edge.poly2->plane.normal < 0.0) {
+					c = Color(127, 127, 127);
+					c = c.mulRGB(cosf(framework.time * 6.0) + 2.0);
+				}
 				else
 					c = Color(63, 63, 63);
 			} else if (edge.poly1->flags || edge.poly2->flags) {
@@ -93,7 +96,8 @@ int main() {
 				c = Color(255, 255, 0);
 			} else {
 				// No polygons visible.
-				continue;				
+				if (!mouse.isDown(BUTTON_RIGHT))
+					continue;
 				c = Color(227, 227, 227);
 			}
 			draw_line(edge.vertex1, edge.vertex2, c);
@@ -250,11 +254,9 @@ static void draw_line(int v1, int v2, Color c) {
 
 	gxBegin(GX_LINES);
 	{
-	
 		setColor(c);
 		gxVertex3f(x1, y1, z1);
 		gxVertex3f(x2, y2, z2);
-		
 	}
 	gxEnd();
 
