@@ -144,16 +144,16 @@ int main(int argc, char* argv[]) {
 	#if SOFTWARE_LIGHTING
 		auto computeLightColor = [&] (CVector & n) -> Vec3
 		{
-			const Vec4 n_world = transformToWorld(Vec4(n[0], n[1], n[2], 0.f));
+			const Vec4 n_view = transformToView(Vec4(n[0], n[1], n[2], 0.f));
 
 			Vec3 color;
 
 			for (int i = 0; i < 2; ++i)
 			{
 				const float intensity =
-					l_direction[i][0] * n_world[0] +
-					l_direction[i][1] * n_world[1] +
-					l_direction[i][2] * n_world[2];
+					l_direction[i][0] * n_view[0] +
+					l_direction[i][1] * n_view[1] +
+					l_direction[i][2] * n_view[2];
 				
 				if (intensity > 0.f)
 				{
