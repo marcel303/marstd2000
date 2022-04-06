@@ -572,8 +572,12 @@ static void draw_poly(CPoly* p) {
 	else
 		setBlend(BLEND_OPAQUE);
 	
-	gxSetTexture((data->mat->flags & MAT_GRGB) ? 0 : data->mat->texture);
-	gxSetTextureSampler(GX_SAMPLE_LINEAR, false);
+	gxSetTexture(
+		(data->mat->flags & MAT_GRGB)
+		? 0
+		: data->mat->texture,
+		GX_SAMPLE_LINEAR,
+		false);
 	{
 		gxBegin(GX_TRIANGLE_FAN);
 		{
@@ -634,7 +638,7 @@ static void draw_poly(CPoly* p) {
 		}
 		gxEnd();
 	}
-	gxSetTexture(0);
+	gxClearTexture();
 	
 	if ((data->mat->flags & MAT_OUTLINE) || keyboard.isDown(SDLK_i))
 	{

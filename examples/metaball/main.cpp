@@ -216,8 +216,7 @@ int main(int argc, char* argv[]) {
 		
 		// Draw floor.
 	
-		gxSetTexture(texmap);
-		gxSetTextureSampler(GX_SAMPLE_LINEAR, true);
+		gxSetTexture(texmap, GX_SAMPLE_LINEAR, true);
 		
   		pushDepthWrite(false); // We disable writing to the depth buffer. When drawing multiple unsorted transparent surfaces, you will need to do this or suffer the consequences.
 	
@@ -242,7 +241,7 @@ int main(int argc, char* argv[]) {
 	
 		popDepthWrite();
 		
-		gxSetTexture(0);
+		gxClearTexture();
 		
 		popDepthTest();
  		
